@@ -23,9 +23,9 @@ const AIM_Y_BIAS := 72.0
 const USE_RIG_CHARACTERS := true
 const FOOT_Y_OFFSET := 24.0
 const HIT_FRAME_PROGRESS := 0.48
-const USE_RIG_PART_ART := true
-const SHOW_RIG_DEBUG_LINES := true
-const RIG_DEBUG_ALPHA := 0.38
+const USE_RIG_PART_ART := false
+const SHOW_RIG_DEBUG_LINES := false
+const RIG_DEBUG_ALPHA := 0.34
 
 var rng := RandomNumberGenerator.new()
 
@@ -898,38 +898,41 @@ func _draw_rig_character(pos: Vector2, color: Color, side: int, speed: float, sw
 	var speed_t := clampf(speed / 300.0, 0.0, 1.0)
 	var run_cycle := player_run_phase if side == PLAYER_SIDE else ai_run_phase
 	var stride := sin(run_cycle) * speed_t
-	var stride_back := sin(run_cycle + PI) * speed_t
-	var lift_a := pow(maxf(0.0, sin(run_cycle)), 0.7) * speed_t
-	var lift_b := pow(maxf(0.0, sin(run_cycle + PI)), 0.7) * speed_t
+	var lift_a := pow(maxf(0.0, sin(run_cycle + PI * 0.18)), 0.72) * speed_t
+	var lift_b := pow(maxf(0.0, sin(run_cycle + PI * 1.18)), 0.72) * speed_t
 	var jump := _jump_offset(swing_phase, swing_type)
 	var ground_y := pos.y + FOOT_Y_OFFSET
 	var airborne := jump > 0.0
-	var stance_width := 27.0
-	var crouch := 5.0 + 4.0 * speed_t - 4.0 * jump / 42.0
-	var hip := Vector2(pos.x - 1.0 * side, ground_y - 52.0 + crouch - jump)
-	var torso_lean: float = (5.0 + 3.0 * speed_t + 8.0 * commit - 5.0 * windup) * -side
-	var chest := hip + Vector2(torso_lean, -46.0)
-	var head := chest + Vector2(4.0 * -side, -25.0)
-	var shoulder_left := chest + Vector2(-18.0, 2.0)
-	var shoulder_right := chest + Vector2(18.0, 2.0)
-	var hip_left := hip + Vector2(-13.0, 4.0)
-	var hip_right := hip + Vector2(13.0, 4.0)
+	var stance_width := 31.0
+	var ready_crouch := 6.0 + 3.0 * speed_t + 4.0 * windup - 3.0 * jump / 42.0
+	var body_drive := (-10.0 * commit + 5.0 * windup + 5.0 * follow) * side
+	var hip := Vector2(pos.x + body_drive * 0.35, ground_y - 60.0 + ready_crouch - jump)
+	var torso_lean: float = (7.0 + 4.0 * speed_t + 10.0 * commit - 7.0 * windup + 3.0 * follow) * -side
+	var chest := hip + Vector2(torso_lean, -50.0)
+	var head := chest + Vector2(5.0 * -side, -26.0)
+	var shoulder_left := chest + Vector2(-16.0, 2.0)
+	var shoulder_right := chest + Vector2(16.0, 2.0)
+	var hip_left := hip + Vector2(-12.0, 4.0)
+	var hip_right := hip + Vector2(12.0, 4.0)
 	var lead_sign := -side
 	var rear_sign := side
-	var lead_foot := Vector2(pos.x + lead_sign * (stance_width + 8.0 * stride), ground_y - 1.0 - 5.0 * lift_a - jump * 0.12)
-	var rear_foot := Vector2(pos.x + rear_sign * (stance_width * 0.80 + 6.0 * stride_back), ground_y + 1.0 - 4.0 * lift_b - jump * 0.12)
+	var lead_step := 8.0 * maxf(0.0, -stride * side)
+	var rear_step := 7.0 * maxf(0.0, stride * side)
+	var lead_foot := Vector2(pos.x + lead_sign * (stance_width + lead_step), ground_y - 1.0 - 5.0 * lift_a - jump * 0.10)
+	var rear_foot := Vector2(pos.x + rear_sign * (stance_width * 0.72 + rear_step), ground_y + 1.0 - 4.0 * lift_b - jump * 0.10)
 	if not moving:
 		lead_foot = Vector2(pos.x + lead_sign * 31.0, ground_y - 1.0)
 		rear_foot = Vector2(pos.x + rear_sign * 22.0, ground_y + 1.0)
 	if commit > 0.0:
-		lead_foot += Vector2(14.0 * lead_sign, -3.0) * commit
+		lead_foot += Vector2(10.0 * lead_sign, -2.0) * commit
+		rear_foot += Vector2(3.0 * rear_sign, 0.0) * commit
 	if airborne:
 		lead_foot.y -= jump * 0.18
 		rear_foot.y -= jump * 0.18
 	var lead_hip := hip_left if lead_sign < 0.0 else hip_right
 	var rear_hip := hip_right if lead_sign < 0.0 else hip_left
-	var lead_knee := Vector2((lead_hip.x + lead_foot.x) * 0.5 + 6.0 * lead_sign, ground_y - 27.0 - 4.0 * lift_a - jump * 0.22)
-	var rear_knee := Vector2((rear_hip.x + rear_foot.x) * 0.5 + 5.0 * rear_sign, ground_y - 25.0 - 3.0 * lift_b - jump * 0.18)
+	var lead_knee := Vector2((lead_hip.x + lead_foot.x) * 0.5 + 5.0 * lead_sign, ground_y - 30.0 - 3.0 * lift_a - jump * 0.18)
+	var rear_knee := Vector2((rear_hip.x + rear_foot.x) * 0.5 + 5.0 * rear_sign, ground_y - 29.0 - 3.0 * lift_b - jump * 0.16)
 	var skeleton_color := Color(0.88, 0.96, 1.0, color.a)
 	var joint_color := Color(0.12, 0.18, 0.22, color.a)
 	if side == AI_SIDE:
@@ -947,12 +950,15 @@ func _draw_rig_character(pos: Vector2, color: Color, side: int, speed: float, sw
 	var racket_head: Vector2 = racket_pose["head"]
 	var shoulder_racket := shoulder_left if side == AI_SIDE else shoulder_right
 	var shoulder_free := shoulder_right if side == AI_SIDE else shoulder_left
-	var free_hand := chest + Vector2(21.0 * side, 0.0 - 4.0 * commit + 5.0 * windup)
-	var elbow_racket := shoulder_racket.lerp(racket_hand, 0.50) + Vector2(5.0 * -side, -7.0 * windup - 4.0 * commit + 6.0 * follow)
-	var elbow_free := shoulder_free.lerp(free_hand, 0.52) + Vector2(5.0 * side, 7.0)
+	var free_hand := chest + Vector2(23.0 * side, 4.0 - 7.0 * commit + 4.0 * windup)
+	var elbow_racket := shoulder_racket.lerp(racket_hand, 0.46) + Vector2(7.0 * -side, -8.0 * windup - 10.0 * commit + 7.0 * follow)
+	var elbow_free := shoulder_free.lerp(free_hand, 0.54) + Vector2(5.0 * side, 8.0)
 	var parts := player_parts if side == PLAYER_SIDE else rival_parts
 	if USE_RIG_PART_ART and not parts.is_empty() and not ghost:
 		_draw_rig_part_art(parts, side, hip, chest, head, shoulder_racket, elbow_racket, racket_hand, racket_head, shoulder_free, elbow_free, free_hand, lead_hip, lead_knee, lead_foot, rear_hip, rear_knee, rear_foot)
+
+	if not USE_RIG_PART_ART or parts.is_empty() or ghost:
+		_draw_rig_body_skin(side, color, ghost, hip, chest, head, shoulder_racket, elbow_racket, racket_hand, racket_head, shoulder_free, elbow_free, free_hand, lead_hip, lead_knee, lead_foot, rear_hip, rear_knee, rear_foot)
 
 	if SHOW_RIG_DEBUG_LINES or ghost or parts.is_empty():
 		_draw_bone(lead_hip, lead_knee, lead_foot, skeleton_color, joint_color, 5.0)
@@ -988,9 +994,9 @@ func _swing_phase(swing_timer: float, swing_type: String) -> Dictionary:
 			"follow": 0.0,
 		}
 	var progress := 1.0 - clampf(swing_timer / total, 0.0, 1.0)
-	var windup := sin(clampf(progress / 0.46, 0.0, 1.0) * PI)
-	var commit := sin(clampf((progress - 0.34) / 0.30, 0.0, 1.0) * PI)
-	var follow := sin(clampf((progress - 0.58) / 0.38, 0.0, 1.0) * PI)
+	var windup := sin(clampf(progress / 0.40, 0.0, 1.0) * PI)
+	var commit := sin(clampf((progress - 0.36) / 0.26, 0.0, 1.0) * PI)
+	var follow := sin(clampf((progress - 0.56) / 0.36, 0.0, 1.0) * PI)
 	return {
 		"progress": progress,
 		"windup": windup,
@@ -1013,28 +1019,28 @@ func _racket_pose(chest: Vector2, side: int, phase: Dictionary, swing_type: Stri
 	var windup: float = phase["windup"]
 	var commit: float = phase["commit"]
 	var follow: float = phase["follow"]
-	var ready_hand := chest + Vector2(24.0 * -side, -16.0 + stride)
-	var ready_head := ready_hand + Vector2(20.0 * -side, -18.0)
-	var windup_hand := chest + Vector2(20.0 * side, -38.0)
-	var windup_head := windup_hand + Vector2(28.0 * side, -26.0)
-	var hit_hand := chest + Vector2(32.0 * -side, -40.0)
-	var hit_head := hit_hand + Vector2(34.0 * -side, -18.0)
-	var follow_hand := chest + Vector2(28.0 * -side, 8.0)
-	var follow_head := follow_hand + Vector2(32.0 * -side, 14.0)
+	var ready_hand := chest + Vector2(27.0 * -side, -12.0 + stride * 2.0)
+	var ready_head := ready_hand + Vector2(22.0 * -side, -16.0)
+	var windup_hand := chest + Vector2(16.0 * side, -32.0)
+	var windup_head := windup_hand + Vector2(28.0 * side, -20.0)
+	var hit_hand := chest + Vector2(42.0 * -side, -35.0)
+	var hit_head := hit_hand + Vector2(38.0 * -side, -15.0)
+	var follow_hand := chest + Vector2(29.0 * -side, 13.0)
+	var follow_head := follow_hand + Vector2(28.0 * -side, 19.0)
 	if swing_type == "drop":
-		windup_hand = chest + Vector2(15.0 * side, -26.0)
-		windup_head = windup_hand + Vector2(22.0 * side, -16.0)
-		hit_hand = chest + Vector2(31.0 * -side, -24.0)
+		windup_hand = chest + Vector2(14.0 * side, -25.0)
+		windup_head = windup_hand + Vector2(22.0 * side, -14.0)
+		hit_hand = chest + Vector2(34.0 * -side, -22.0)
 		hit_head = hit_hand + Vector2(30.0 * -side, -5.0)
-		follow_hand = chest + Vector2(25.0 * -side, -5.0)
-		follow_head = follow_hand + Vector2(24.0 * -side, 5.0)
+		follow_hand = chest + Vector2(27.0 * -side, -5.0)
+		follow_head = follow_hand + Vector2(24.0 * -side, 6.0)
 	elif swing_type == "smash" or swing_type == "skill":
-		windup_hand = chest + Vector2(28.0 * side, -58.0)
-		windup_head = windup_hand + Vector2(36.0 * side, -32.0)
-		hit_hand = chest + Vector2(43.0 * -side, -56.0)
-		hit_head = hit_hand + Vector2(44.0 * -side, -30.0)
-		follow_hand = chest + Vector2(35.0 * -side, 25.0)
-		follow_head = follow_hand + Vector2(38.0 * -side, 24.0)
+		windup_hand = chest + Vector2(24.0 * side, -55.0)
+		windup_head = windup_hand + Vector2(34.0 * side, -27.0)
+		hit_hand = chest + Vector2(43.0 * -side, -54.0)
+		hit_head = hit_hand + Vector2(43.0 * -side, -27.0)
+		follow_hand = chest + Vector2(37.0 * -side, 25.0)
+		follow_head = follow_hand + Vector2(36.0 * -side, 22.0)
 	var hand := ready_hand
 	var head := ready_head
 	if windup > 0.0:
@@ -1073,6 +1079,41 @@ func _draw_limb(a: Vector2, b: Vector2, c: Vector2, color: Color, joint_color: C
 	draw_line(b, c, color, width_b)
 	draw_circle(b, width_b * 0.56, joint_color)
 	draw_circle(c, width_b * 0.62, joint_color)
+
+
+func _draw_rig_body_skin(side: int, base_color: Color, ghost: bool, hip: Vector2, chest: Vector2, head: Vector2, shoulder_racket: Vector2, elbow_racket: Vector2, hand_racket: Vector2, racket_head: Vector2, shoulder_free: Vector2, elbow_free: Vector2, hand_free: Vector2, lead_hip: Vector2, lead_knee: Vector2, lead_foot: Vector2, rear_hip: Vector2, rear_knee: Vector2, rear_foot: Vector2) -> void:
+	var palette := _rig_palette(side, base_color, ghost)
+	var skin: Color = palette["skin"]
+	var cloth: Color = palette["cloth"]
+	var accent: Color = palette["accent"]
+	var dark: Color = palette["dark"]
+	var line: Color = palette["line"]
+	var limb_shadow := Color(0.0, 0.0, 0.0, base_color.a * (0.18 if not ghost else 0.06))
+	var arm_color := skin if side == PLAYER_SIDE else Color(0.54, 0.12, 0.12, skin.a)
+	var leg_color := skin if side == PLAYER_SIDE else Color(0.07, 0.065, 0.07, skin.a)
+	var shoe_color := accent if side == PLAYER_SIDE else Color(0.50, 0.04, 0.04, base_color.a)
+
+	_draw_capsule(rear_hip, rear_knee, 15.5, limb_shadow)
+	_draw_capsule(rear_knee, rear_foot + Vector2(0.0, -3.0), 12.0, limb_shadow)
+	_draw_capsule(rear_hip, rear_knee, 12.0, cloth if side == PLAYER_SIDE else leg_color)
+	_draw_capsule(rear_knee, rear_foot + Vector2(0.0, -3.0), 9.5, leg_color)
+	_draw_shoe(rear_foot, rear_foot.x < lead_foot.x, shoe_color, line, base_color.a)
+
+	_draw_capsule(lead_hip, lead_knee, 16.5, limb_shadow)
+	_draw_capsule(lead_knee, lead_foot + Vector2(0.0, -3.0), 12.5, limb_shadow)
+	_draw_capsule(lead_hip, lead_knee, 12.8, cloth if side == PLAYER_SIDE else leg_color)
+	_draw_capsule(lead_knee, lead_foot + Vector2(0.0, -3.0), 9.8, leg_color)
+	_draw_shoe(lead_foot, lead_foot.x < rear_foot.x, shoe_color, line, base_color.a)
+
+	_draw_torso(hip, chest, side, cloth, accent, line)
+	_draw_capsule(shoulder_free, elbow_free, 10.2, arm_color)
+	_draw_capsule(elbow_free, hand_free, 8.0, arm_color)
+	_draw_hand(hand_free, side, skin, dark)
+	_draw_capsule(shoulder_racket, elbow_racket, 10.8, arm_color)
+	_draw_capsule(elbow_racket, hand_racket, 8.3, arm_color)
+	_draw_hand(hand_racket, side, skin, dark)
+	_draw_head(head, side, skin, dark, accent)
+	_draw_racket(hand_racket, racket_head, side, line, accent, ghost)
 
 
 func _draw_bone(a: Vector2, b: Vector2, c: Vector2, color: Color, joint_color: Color, width: float) -> void:
@@ -1139,34 +1180,35 @@ func _draw_part_at(texture: Texture2D, center: Vector2, size: Vector2, rotation:
 func _draw_torso(hip: Vector2, chest: Vector2, side: int, cloth: Color, accent: Color, line: Color) -> void:
 	var normal := (chest - hip).normalized().orthogonal()
 	var points := PackedVector2Array([
-		chest + normal * 30.0,
-		chest - normal * 25.0,
-		hip - normal * 22.0,
-		hip + normal * 26.0,
+		chest + normal * 24.0,
+		chest - normal * 21.0,
+		hip - normal * 18.0,
+		hip + normal * 21.0,
 	])
 	draw_colored_polygon(points, cloth)
-	draw_line(chest + normal * 21.0, hip - normal * 12.0, accent, 8.0)
-	draw_line(chest - normal * 20.0, hip + normal * 19.0, line, 2.0)
+	draw_line(chest + normal * 17.0, hip - normal * 9.0, accent, 6.0)
+	draw_line(chest - normal * 16.0, hip + normal * 15.0, line, 1.8)
 
 
 func _draw_head(head: Vector2, side: int, skin: Color, dark: Color, accent: Color) -> void:
 	if side == PLAYER_SIDE:
-		draw_circle(head, 20.0, skin)
-		draw_circle(head + Vector2(6.0 * side, -9.0), 14.0, dark)
-		draw_line(head + Vector2(9.0 * side, 1.0), head + Vector2(22.0 * side, 2.0), dark, 2.0)
+		draw_circle(head, 14.5, skin)
+		draw_circle(head + Vector2(4.0 * side, -8.0), 10.5, dark)
+		draw_circle(head + Vector2(8.0 * -side, -2.0), 2.0, dark)
+		draw_line(head + Vector2(8.0 * -side, 4.0), head + Vector2(17.0 * -side, 5.0), dark, 1.6)
 	else:
-		draw_circle(head, 21.0, Color(0.95, 0.92, 0.88, skin.a))
-		draw_circle(head + Vector2(5.0 * side, 1.0), 8.0, dark)
-		draw_line(head + Vector2(-9.0, -20.0), head + Vector2(-22.0, -34.0), accent, 5.0)
-		draw_line(head + Vector2(9.0, -20.0), head + Vector2(23.0, -32.0), accent, 5.0)
+		draw_circle(head, 15.0, Color(0.95, 0.92, 0.88, skin.a))
+		draw_circle(head + Vector2(5.0 * side, 1.0), 6.0, dark)
+		draw_line(head + Vector2(-7.0, -14.0), head + Vector2(-17.0, -26.0), accent, 3.2)
+		draw_line(head + Vector2(7.0, -14.0), head + Vector2(18.0, -25.0), accent, 3.2)
 
 
 func _draw_racket(hand: Vector2, head: Vector2, side: int, line: Color, accent: Color, ghost: bool) -> void:
-	draw_line(hand, head, Color(0.95, 0.78, 0.26, line.a), 4.0)
-	var rim_center := head + Vector2(13.0 * -side, -7.0)
-	draw_arc(rim_center, 18.0, -0.7, 2.7, 24, line, 3.0)
-	draw_line(rim_center + Vector2(-13.0, -4.0), rim_center + Vector2(13.0, 4.0), Color(line.r, line.g, line.b, line.a * 0.45), 1.2)
-	draw_line(rim_center + Vector2(-8.0, 10.0), rim_center + Vector2(8.0, -10.0), Color(line.r, line.g, line.b, line.a * 0.45), 1.2)
+	draw_line(hand, head, Color(0.95, 0.78, 0.26, line.a), 3.2)
+	var rim_center := head + Vector2(12.0 * -side, -6.0)
+	draw_arc(rim_center, 16.0, -0.7, 2.7, 24, line, 2.8)
+	draw_line(rim_center + Vector2(-11.0, -4.0), rim_center + Vector2(11.0, 4.0), Color(line.r, line.g, line.b, line.a * 0.45), 1.0)
+	draw_line(rim_center + Vector2(-7.0, 9.0), rim_center + Vector2(8.0, -10.0), Color(line.r, line.g, line.b, line.a * 0.32), 0.8)
 
 
 func _draw_player_shape(pos: Vector2, color: Color, side: int, speed: float, swing_timer: float, ghost: bool = false, swing_type: String = "") -> void:
@@ -1365,3 +1407,30 @@ func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 		var angle := TAU * float(i) / 24.0
 		points.push_back(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	draw_colored_polygon(points, color)
+
+
+func _draw_capsule(a: Vector2, b: Vector2, width: float, color: Color) -> void:
+	if a.distance_squared_to(b) < 1.0:
+		draw_circle(a, width * 0.5, color)
+		return
+	draw_line(a, b, color, width)
+	draw_circle(a, width * 0.5, color)
+	draw_circle(b, width * 0.5, color)
+
+
+func _draw_hand(center: Vector2, side: int, skin: Color, dark: Color) -> void:
+	draw_circle(center, 5.0, skin)
+	draw_line(center + Vector2(2.0 * -side, 1.0), center + Vector2(8.0 * -side, 5.0), dark, 1.2)
+
+
+func _draw_shoe(foot: Vector2, facing_left: bool, fill: Color, line: Color, alpha: float) -> void:
+	var dir := -1.0 if facing_left else 1.0
+	var points := PackedVector2Array([
+		foot + Vector2(-9.0 * dir, -5.0),
+		foot + Vector2(10.0 * dir, -6.0),
+		foot + Vector2(18.0 * dir, -1.0),
+		foot + Vector2(12.0 * dir, 4.0),
+		foot + Vector2(-11.0 * dir, 4.0),
+	])
+	draw_colored_polygon(points, fill)
+	draw_line(foot + Vector2(-11.0 * dir, 4.0), foot + Vector2(14.0 * dir, 4.0), Color(line.r, line.g, line.b, alpha * 0.82), 1.6)
