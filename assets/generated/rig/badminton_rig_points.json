@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "mode": "side_view_single_line",
+  "notes": "Stick-figure validation rig aligned to the reference badminton stance. Sprite parts should be cut from the AIART modular sheets and attached to these logical joints.",
+  "recommended_sources": {
+    "player": "res://assets/generated/images/modular-player-badminton-parts-4.png",
+    "rival": "res://assets/generated/images/modular-rival-demon-parts-3.png"
+  },
+  "joints": {
+    "hip": "root for pelvis and leg rotation",
+    "chest": "torso top and shoulder root",
+    "head": "head/mask sprite center",
+    "shoulder_racket": "racket-arm upper arm root",
+    "elbow_racket": "racket-arm elbow",
+    "hand_racket": "racket hand and racket grip",
+    "shoulder_free": "free-arm upper arm root",
+    "elbow_free": "free-arm elbow",
+    "hand_free": "free hand",
+    "hip_lead": "front-leg upper leg root",
+    "knee_lead": "front knee",
+    "foot_lead": "front shoe",
+    "hip_rear": "rear-leg upper leg root",
+    "knee_rear": "rear knee",
+    "foot_rear": "rear shoe",
+    "racket_head": "racket head / hit frame visual point"
+  },
+  "animation_phases": {
+    "idle": "compact badminton ready stance with knees bent and racket near chest/head side",
+    "run": "phase-driven front/back foot alternation; no vertical crawling",
+    "clear": "small windup, high forward contact, controlled follow-through",
+    "drop": "shorter windup and softer forward contact",
+    "smash": "larger overhead windup, jump lift, high forward contact, downward follow-through",
+    "skill": "smash timing with larger jump lift and stronger effects"
+  },
+  "hit_frame_progress": 0.48
+}
