@@ -1,0 +1,10 @@
+.godot/
+.godot_home/
+.codex/
+.env
+.env.*
+.import/
+*.tmp
+*.log
+.DS_Store
+ScreenRecording*.MP4
